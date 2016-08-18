@@ -9,4 +9,4 @@ build your own data structure in your program. Comparing with the parsing, the d
 should be less costly.
 
 ## License
-MIT License
+BSD License
