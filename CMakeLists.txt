@@ -5,9 +5,9 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default Build Type is Release" FORC
 
 # build unittest
 include_directories(src/
-                    3rdParty/googletest-release-1.7.0/include/)
+                    3rdparty/googletest-release-1.7.0/include/)
 set(gtest_disable_pthreads ON CACHE BOOL "disable pthreads")
-add_subdirectory(3rdParty/googletest-release-1.7.0)
+add_subdirectory(3rdparty/googletest-release-1.7.0)
 
 add_definitions("-std=c++1y")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
