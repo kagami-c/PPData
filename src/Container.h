@@ -32,7 +32,9 @@ public:
     // iterator interface
     class const_iterator : public std::iterator<std::input_iterator_tag, Peptide> {
     public:
-        const_iterator(const Peptide& peptide);
+        explicit const_iterator(const Peptide& peptide);
+        const_iterator(const const_iterator& it);
+        ~const_iterator();
         const_iterator& operator++();
         const_iterator operator++(int);
         bool operator==(const_iterator other) const;
@@ -66,7 +68,8 @@ public:
               double min_mass,
               double max_mass);
 
-    Container(const char* filename) : Container(filename, EnzymeType::Trypsin, false, 0, 600.0, 5000.0) {}
+    Container(const char* filename) : Container(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
+    ~Container();
 
     // subrange loop API
     const_iterator lower_bound(double mass) const;  // including

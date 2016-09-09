@@ -1,6 +1,7 @@
 // Copyright (C) 2016
 
 #include "Container.h"
+#include "PeptMgr.h"
 
 // data interface ctor
 Container::Protein::Protein(const char* name, const char* sequence, size_t sequence_length)
@@ -27,27 +28,28 @@ private:
 };
 
 Container::const_iterator::const_iterator(const Peptide& peptide) : pImpl(std::make_unique<Impl>(peptide)) {}
+Container::const_iterator::const_iterator(const const_iterator& it) : pImpl(std::make_unique<Impl>(*it)) {}
 Container::const_iterator::~const_iterator() {}
 
-Container::const_iterator& const_iterator::operator++() { pImpl->increment(); return *this; }
-Container::const_iterator const_iterator::operator++(int) {
+Container::const_iterator& Container::const_iterator::operator++() { pImpl->increment(); return *this; }
+Container::const_iterator Container::const_iterator::operator++(int) {
     const_iterator old(pImpl->element()); ++(*this); return old;
 }
 
-bool const_iterator::operator==(const_iterator other) const {
+bool Container::const_iterator::operator==(const_iterator other) const {
     return &(pImpl->element()) == &(other.pImpl->element());
 }
 
-bool const_iterator::operator!=(const_iterator other) const {
+bool Container::const_iterator::operator!=(const_iterator other) const {
     return &(pImpl->element()) != &(other.pImpl->element());
 }
 
-const Container::Peptide& const_iterator::operator*() const { return pImpl->element(); }
+const Container::Peptide& Container::const_iterator::operator*() const { return pImpl->element(); }
 
 // range object implementation
 Container::range::range(const_iterator begin, const_iterator end) : begin_(begin), end_(end) {}
-Container::const_iterator range::begin() const { return begin_; }
-Container::const_iterator range::end() const { return end_; }
+Container::const_iterator Container::range::begin() const { return begin_; }
+Container::const_iterator Container::range::end() const { return end_; }
 
 // TODO: Rewrite the rest of the code
 // container implementation
@@ -57,31 +59,31 @@ public:
          unsigned max_miss_cleavage, double min_mass, double max_mass)
             : database_name_(filename),
               // TODO: change to future version
-              mgr_(filename, append_decoy, enzyme_type, max_miss_cleavage, min_mass, max_mass) {}
+              mgr_(filename, append_decoy, PeptGenerator::EnzymeType::Trypsin, max_miss_cleavage, min_mass, max_mass) {}
 
     // TODO: change the adapters
     const Peptide& lower_bound(double mass) const {
         auto peptides = mgr_.Retrieve();
-        auto start = std::lower_bound(peptides.begin(), peptides.end(), mass,
+        auto start = std::lower_bound(peptides.cbegin(), peptides.cend(), mass,
             [](const auto& peptide, const auto& val) {
                 return peptide.mass < val;
             }
-        };
-        return &start;
+        );
+        return *start;
     }
 
     const Peptide& upper_bound(double mass) const {
         auto peptides = mgr_.Retrieve();
-        auto end = std::upper_bound(peptides.begin(), peptides.end(), mass,
+        auto end = std::upper_bound(peptides.cbegin(), peptides.cend(), mass,
             [](const auto& peptide, const auto& val) {
                 return val < peptide.mass;
             }
-        };
-        return &end;
+        );
+        return *end;
     }
 
-    const Peptide& begin() const { return &(mgr_.Retrieve().begin()); }
-    const Peptide& end() const { return &(mgr_.Retrieve().end()); }
+    const Peptide& begin() const { return *(mgr_.Retrieve().cbegin()); }
+    const Peptide& end() const { return *(mgr_.Retrieve().cend()); }
 
     size_t size() const { return mgr_.Retrieve().size(); }
 
