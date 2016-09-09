@@ -1,3 +1,5 @@
+// Copyright (C) 2016
+
 #include "Container.h"
 
 // data interface ctor
@@ -57,7 +59,7 @@ public:
               // TODO: change to future version
               mgr_(filename, append_decoy, enzyme_type, max_miss_cleavage, min_mass, max_mass) {}
 
-    // adapters
+    // TODO: change the adapters
     const Peptide& lower_bound(double mass) const {
         auto peptides = mgr_.Retrieve();
         auto start = std::lower_bound(peptides.begin(), peptides.end(), mass,

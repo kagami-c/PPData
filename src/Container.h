@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <iterator>
+#include <memory>
+
 class Container {
 public:
     struct Protein {
