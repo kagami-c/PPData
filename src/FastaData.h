@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Container.h"
 #include <fstream>
 #include <vector>
 #include <cassert>
@@ -7,12 +8,7 @@
 
 class FastaData {
 public:
-    struct Protein {
-        unsigned name_size;
-        unsigned sequence_size;
-        const char* name;
-        const char* sequence;
-    };  // arrange for memory alignment
+    using Protein = Container::Protein;
 
     FastaData(const char* filename, bool append_decoy) : filename_(filename) {
         // read data into memory
@@ -36,12 +32,17 @@ public:
                 if (c == '>') { state = ParseState::Name; }
                 break;
             case ParseState::Name:
-                data_[index++] = c;
-                if (c == '\n') { state = ParseState::Sequence; }
+                if (c == '\n') {
+                    data_[index++] = '\0';
+                    state = ParseState::Sequence;
+                }
+                else {
+                    data_[index++] = c;
+                }
                 break;
             case ParseState::Sequence:
                 if (c == '>') {
-                    data_[index++] = '\n';
+                    data_[index++] = '\0';
                     data_[index++] = '>';
                     state = ParseState::Name;
                 }
@@ -55,24 +56,23 @@ public:
 
         // build proteins
         state = ParseState::Start;  // reuse the same state
-        Protein temp;
+        const char* temp_name = nullptr;
         for (auto i = 0; i < data_.size(); ++i) {
             switch (state) {
             case ParseState::Start:
                 if (data_[i] == '>') { state = ParseState::Name; }
                 break;
             case ParseState::Name:
-                temp.name = &data_[i];
-                while (data_[i] != '\n') { ++i; }
-                temp.name_size = &data_[i] - temp.name;
+                temp_name = &data_[i];
+                while (data_[i] != '\0') { ++i; }
                 state = ParseState::Sequence;
                 break;
             case ParseState::Sequence:
-                temp.sequence = &data_[i];
-                while (data_[i] != '\n' && data_[i] != '\0') { ++i; }
-                temp.sequence_size = &data_[i] - temp.sequence;
+                const char* temp_sequence = &data_[i];
+                while (data_[i] != '\0') { ++i; }
+                size_t temp_length = &data_[i] - temp_sequence;
                 // build protein
-                proteins_.push_back(temp);
+                proteins_.push_back(Protein(temp_name, temp_sequence, temp_length));
                 state = ParseState::Start;
                 break;
             }
@@ -81,37 +81,37 @@ public:
         // build decoy, if required
         if (append_decoy) {
             auto target_protein_num = proteins_.size();
-            auto decoy_datamap_size = data_.size() + target_protein_num * 6;  // add DECOY_ prefix before each protein name
+            auto decoy_datamap_size = data_.size() + target_protein_num * 6;  // add DECOY_ prefix before protein name
             decoy_data_.resize(decoy_datamap_size);
 
-            proteins_.resize(target_protein_num * 2);
             auto decoy_index = 0;
             for (auto i = 0; i < target_protein_num; ++i) {
-                Protein decoy_protein;
+                const char* decoy_name;
+                const char* decoy_sequence;
+                size_t decoy_seq_len;
 
                 // build each decoy protein
                 decoy_data_[decoy_index++] = '>';
-                decoy_protein.name = &decoy_data_[decoy_index];
+                decoy_name = &decoy_data_[decoy_index];
                 FillDecoyPrefix(decoy_index);
 
                 auto& target_protein = proteins_[i];
-                for (unsigned j = 0; j < target_protein.name_size; ++j) {
+                for (unsigned j = 0; target_protein.name[j] != '\0'; ++j) {
                     decoy_data_[decoy_index++] = target_protein.name[j];
                 }
-                decoy_protein.name_size = &decoy_data_[decoy_index] - decoy_protein.name;
-                decoy_data_[decoy_index++] = '\n';
+                decoy_data_[decoy_index++] = '\0';
 
-                decoy_protein.sequence = &decoy_data_[decoy_index];
-                for (unsigned j = 0; j < target_protein.sequence_size; ++j) {
-                    decoy_data_[decoy_index++] = target_protein.sequence[target_protein.sequence_size - 1 - j];
+                decoy_sequence = &decoy_data_[decoy_index];
+                for (int j = target_protein.sequence_length - 1; target_protein.sequence[j] != '\0'; --j) {
+                    decoy_data_[decoy_index++] = target_protein.sequence[j];
                 }
-                decoy_protein.sequence_size = &decoy_data_[decoy_index] - decoy_protein.sequence;
-                decoy_data_[decoy_index++] = '\n';
+                decoy_seq_len = &decoy_data_[decoy_index] - decoy_sequence;
+                decoy_data_[decoy_index++] = '\0';
 
-                proteins_[target_protein_num + i] = decoy_protein;
+                // build decoy protein
+                proteins_.push_back(Protein(decoy_name, decoy_sequence, decoy_seq_len));
             }
             assert(decoy_data_.size() == decoy_index);
-            decoy_data_[decoy_index - 1] = '\0';  // the last position is already set '\n'
         }
     }
 
@@ -125,10 +125,10 @@ private:
     std::vector<char> decoy_data_;
     std::vector<Protein> proteins_;
 
-    enum class ParseState { Start, Name, Sequence };  // used in both ctor and load
+    enum class ParseState { Start, Name, Sequence };  // reuse twice
 
     void FillDecoyPrefix(int& index) {
-        const char* prefix = "DECOY_";
+        const char* const prefix = "DECOY_";
         for (auto i = 0; i < 6; ++i) {
             decoy_data_[index++] = prefix[i];
         }
