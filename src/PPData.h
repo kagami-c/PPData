@@ -5,7 +5,7 @@
 #include <iterator>
 #include <memory>
 
-class Container {
+class PeptData {
 public:
     struct Protein {
         const char* const name;
@@ -61,15 +61,15 @@ public:
     enum class EnzymeType { Trypsin };
 
     // ctors
-    Container(const char* filename,
+    PeptData(const char* filename,
               bool append_decoy,
               EnzymeType enzyme_type,
               unsigned max_miss_cleavage,
               double min_mass,
               double max_mass);
 
-    Container(const char* filename) : Container(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
-    ~Container();
+    PeptData(const char* filename) : PeptData(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
+    ~PeptData();
 
     // subrange loop API
     const_iterator lower_bound(double mass) const;  // including
@@ -85,4 +85,3 @@ private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
 };
-

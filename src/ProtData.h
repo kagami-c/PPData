@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Container.h"
+#include "PPData.h"
 #include <fstream>
 #include <vector>
 #include <cassert>
 #include <stdexcept>
 
-class FastaData {
+class ProtData {
 public:
-    using Protein = Container::Protein;
+    using Protein = PPData::Protein;
 
-    FastaData(const char* filename, bool append_decoy) : filename_(filename) {
+    ProtData(const char* filename, bool append_decoy) {
         // read data into memory
         std::basic_ifstream<char> file(filename, std::ios::binary);
         if (!file) { throw std::runtime_error("Fail to open fasta database file."); }
@@ -23,7 +23,7 @@ public:
         raw_data[size] = 0;
 
         // concatenate sequence in memory, by copying the data to a new place
-        data_.resize(raw_data.size());
+        target_data_.resize(raw_data.size());
         auto state = ParseState::Name;
         auto index = 0;
         for (auto& c : raw_data) {
@@ -33,44 +33,44 @@ public:
                 break;
             case ParseState::Name:
                 if (c == '\n') {
-                    data_[index++] = '\0';
+                    target_data_[index++] = '\0';
                     state = ParseState::Sequence;
                 }
                 else {
-                    data_[index++] = c;
+                    target_data_[index++] = c;
                 }
                 break;
             case ParseState::Sequence:
                 if (c == '>') {
-                    data_[index++] = '\0';
-                    data_[index++] = '>';
+                    target_data_[index++] = '\0';
+                    target_data_[index++] = '>';
                     state = ParseState::Name;
                 }
                 else if (c != ' ' && c != '\r' && c != '\n' && c != '\t') {
-                    data_[index++] = c;
+                    target_data_[index++] = c;
                 }
                 break;
             }
         }
-        data_.resize(index);
+        target_data_.resize(index);
 
         // build proteins
         state = ParseState::Start;  // reuse the same state
         const char* temp_name = nullptr;
-        for (auto i = 0; i < data_.size(); ++i) {
+        for (auto i = 0; i < target_data_.size(); ++i) {
             switch (state) {
             case ParseState::Start:
-                if (data_[i] == '>') { state = ParseState::Name; }
+                if (target_data_[i] == '>') { state = ParseState::Name; }
                 break;
             case ParseState::Name:
-                temp_name = &data_[i];
-                while (data_[i] != '\0') { ++i; }
+                temp_name = &target_data_[i];
+                while (target_data_[i] != '\0') { ++i; }
                 state = ParseState::Sequence;
                 break;
             case ParseState::Sequence:
-                const char* temp_sequence = &data_[i];
-                while (data_[i] != '\0') { ++i; }
-                size_t temp_length = &data_[i] - temp_sequence;
+                const char* temp_sequence = &target_data_[i];
+                while (target_data_[i] != '\0') { ++i; }
+                size_t temp_length = &target_data_[i] - temp_sequence;
                 // build protein
                 proteins_.push_back(Protein(temp_name, temp_sequence, temp_length));
                 state = ParseState::Start;
@@ -81,7 +81,7 @@ public:
         // build decoy, if required
         if (append_decoy) {
             auto target_protein_num = proteins_.size();
-            auto decoy_datamap_size = data_.size() + target_protein_num * 6;  // add DECOY_ prefix before protein name
+            auto decoy_datamap_size = target_data_.size() + target_protein_num * 6;  // add DECOY_ prefix before protein name
             decoy_data_.resize(decoy_datamap_size);
 
             auto decoy_index = 0;
@@ -115,13 +115,12 @@ public:
         }
     }
 
-    std::vector<Protein> GetProteins() const {
+    const std::vector<Protein>& GetProteins() const {
         return proteins_;
     }
 
 private:
-    const char* filename_;
-    std::vector<char> data_;
+    std::vector<char> target_data_;
     std::vector<char> decoy_data_;
     std::vector<Protein> proteins_;
 
