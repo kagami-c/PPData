@@ -5,7 +5,7 @@
 #include <iterator>
 #include <memory>
 
-class PeptData {
+class PPData {
 public:
     struct Protein {
         const char* const name;
@@ -26,7 +26,8 @@ public:
         const Protein* const protein;
         const size_t offset;  // offset in protein sequence
 
-        Peptide(const Protein& protein, size_t start_idx, size_t end_idx, double mass);
+        Peptide(const Protein& protein, const char* compact_protein_sequence, 
+                size_t start_idx, size_t end_idx, double mass);
     };
 
     // iterator interface
@@ -61,25 +62,23 @@ public:
     enum class EnzymeType { Trypsin };
 
     // ctors
-    PeptData(const char* filename,
+    PPData(const char* filename,
               bool append_decoy,
               EnzymeType enzyme_type,
               unsigned max_miss_cleavage,
               double min_mass,
               double max_mass);
+    PPData(const char* filename) : PPData(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
+    ~PPData();
 
-    PeptData(const char* filename) : PeptData(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
-    ~PeptData();
+    size_t size() const;
+    const_iterator begin() const;
+    const_iterator end() const;
 
     // subrange loop API
     const_iterator lower_bound(double mass) const;  // including
     const_iterator upper_bound(double mass) const;  // excluding
     range LoopWithin(double lower_mass, double upper_mass) const;
-
-    const_iterator begin() const;
-    const_iterator end() const;
-
-    size_t size() const;
 
 private:
     class Impl;

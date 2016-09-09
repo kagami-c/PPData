@@ -10,7 +10,31 @@ class ProtData {
 public:
     using Protein = PPData::Protein;
 
-    ProtData(const char* filename, bool append_decoy) {
+    ProtData(const char* filename, bool append_decoy) 
+            : database_name_(filename), append_decoy_(append_decoy) {
+        ReadTargetData(filename);  // read refined fasta into target_data_
+        BuildTargetProteins();  // build target proteins into proteins_
+        if (append_decoy) {  // build decoy_data_ and append decoys into proteins_
+            BuildDecoy();
+        }
+    }
+
+    size_t size() const { return proteins_.size(); }
+    auto begin() const { return proteins_.cbegin(); }
+    auto end() const { return proteins_.cend(); }
+
+private:
+    const char* const database_name_;
+    const bool append_decoy_;
+
+    std::vector<char> target_data_;
+    std::vector<char> decoy_data_;
+    std::vector<Protein> proteins_;
+
+    enum class ParseState { Start, Name, Sequence };  // reuse twice
+
+    // builders used in ctor
+    void ReadTargetData(const char* filename) {
         // read data into memory
         std::basic_ifstream<char> file(filename, std::ios::binary);
         if (!file) { throw std::runtime_error("Fail to open fasta database file."); }
@@ -53,9 +77,11 @@ public:
             }
         }
         target_data_.resize(index);
+    }
 
-        // build proteins
-        state = ParseState::Start;  // reuse the same state
+    void BuildTargetProteins() {
+        // parse fasta
+        auto state = ParseState::Start;  // reuse the same state
         const char* temp_name = nullptr;
         for (auto i = 0; i < target_data_.size(); ++i) {
             switch (state) {
@@ -77,54 +103,42 @@ public:
                 break;
             }
         }
+    }
 
-        // build decoy, if required
-        if (append_decoy) {
-            auto target_protein_num = proteins_.size();
-            auto decoy_datamap_size = target_data_.size() + target_protein_num * 6;  // add DECOY_ prefix before protein name
-            decoy_data_.resize(decoy_datamap_size);
+    void BuildDecoy() {
+        auto target_protein_num = proteins_.size();
+        auto decoy_datamap_size = target_data_.size() + target_protein_num * 6;  // add DECOY_ prefix before protein name
+        decoy_data_.resize(decoy_datamap_size);
 
-            auto decoy_index = 0;
-            for (auto i = 0; i < target_protein_num; ++i) {
-                const char* decoy_name;
-                const char* decoy_sequence;
-                size_t decoy_seq_len;
+        auto decoy_index = 0;
+        for (auto i = 0; i < target_protein_num; ++i) {
+            const char* decoy_name;
+            const char* decoy_sequence;
+            size_t decoy_sequence_length;
 
-                // build each decoy protein
-                decoy_data_[decoy_index++] = '>';
-                decoy_name = &decoy_data_[decoy_index];
-                FillDecoyPrefix(decoy_index);
+            // build each decoy protein
+            decoy_data_[decoy_index++] = '>';
+            decoy_name = &decoy_data_[decoy_index];
+            FillDecoyPrefix(decoy_index);
 
-                auto& target_protein = proteins_[i];
-                for (unsigned j = 0; target_protein.name[j] != '\0'; ++j) {
-                    decoy_data_[decoy_index++] = target_protein.name[j];
-                }
-                decoy_data_[decoy_index++] = '\0';
-
-                decoy_sequence = &decoy_data_[decoy_index];
-                for (int j = target_protein.sequence_length - 1; target_protein.sequence[j] != '\0'; --j) {
-                    decoy_data_[decoy_index++] = target_protein.sequence[j];
-                }
-                decoy_seq_len = &decoy_data_[decoy_index] - decoy_sequence;
-                decoy_data_[decoy_index++] = '\0';
-
-                // build decoy protein
-                proteins_.push_back(Protein(decoy_name, decoy_sequence, decoy_seq_len));
+            auto& target_protein = proteins_[i];
+            for (unsigned j = 0; target_protein.name[j] != '\0'; ++j) {
+                decoy_data_[decoy_index++] = target_protein.name[j];
             }
-            assert(decoy_data_.size() == decoy_index);
+            decoy_data_[decoy_index++] = '\0';
+
+            decoy_sequence = &decoy_data_[decoy_index];
+            for (int j = target_protein.sequence_length - 1; target_protein.sequence[j] != '\0'; --j) {
+                decoy_data_[decoy_index++] = target_protein.sequence[j];
+            }
+            decoy_sequence_length = &decoy_data_[decoy_index] - decoy_sequence;
+            decoy_data_[decoy_index++] = '\0';
+
+            // build decoy protein
+            proteins_.push_back(Protein(decoy_name, decoy_sequence, decoy_sequence_length));
         }
+        assert(decoy_data_.size() == decoy_index);
     }
-
-    const std::vector<Protein>& GetProteins() const {
-        return proteins_;
-    }
-
-private:
-    std::vector<char> target_data_;
-    std::vector<char> decoy_data_;
-    std::vector<Protein> proteins_;
-
-    enum class ParseState { Start, Name, Sequence };  // reuse twice
 
     void FillDecoyPrefix(int& index) {
         const char* const prefix = "DECOY_";
