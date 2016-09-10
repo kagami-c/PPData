@@ -3,13 +3,13 @@
 #include <gtest/gtest.h>
 
 TEST(Unittest_PPData, PPData_API) {
-//    PPData ppdata("uniprot-all.fasta", false, PPData::EnzymeType::Trypsin, 0, 700, 5000);
-//    EXPECT_EQ(554376, ppdata.size());
+    PPData ppdata("uniprot-all.fasta", false, PPData::EnzymeType::Trypsin, 0, 700, 5000);
+    EXPECT_EQ(554376, ppdata.size());
 //    auto range = ppdata.LoopWithin(700, 5000);
 //    EXPECT_EQ(554376, std::distance(range.begin(), range.end()));
 
-//    PPData ppdata2("uniprot-all.fasta", false, PPData::EnzymeType::Trypsin, 1, 700, 5000);
-//    EXPECT_EQ(1465360, ppdata2.size());
+    PPData ppdata2("uniprot-all.fasta", false, PPData::EnzymeType::Trypsin, 1, 700, 5000);
+    EXPECT_EQ(1465360, ppdata2.size());
 //    iters = peptset2.RetrieveMassRange(700, 5000);
 //    EXPECT_EQ(1465360, std::distance(iters.first, iters.second));
 
