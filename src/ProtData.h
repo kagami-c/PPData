@@ -83,7 +83,7 @@ private:
         // parse fasta
         auto state = ParseState::Start;  // reuse the same state
         const char* temp_name = nullptr;
-        for (auto i = 0; i < target_data_.size(); ++i) {
+        for (unsigned i = 0; i < target_data_.size(); ++i) {
             switch (state) {
             case ParseState::Start:
                 if (target_data_[i] == '>') { state = ParseState::Name; }
@@ -111,7 +111,7 @@ private:
         decoy_data_.resize(decoy_datamap_size);
 
         auto decoy_index = 0;
-        for (auto i = 0; i < target_protein_num; ++i) {
+        for (unsigned i = 0; i < target_protein_num; ++i) {
             const char* decoy_name;
             const char* decoy_sequence;
             size_t decoy_sequence_length;

@@ -2,6 +2,7 @@
 
 #include "PPData.h"
 #include "ProtData.h"
+#include "Hash.h"  // hash support for PPData::Peptide
 #include <vector>
 #include <numeric>
 #include <unordered_set>
@@ -34,7 +35,7 @@ public:
         for (auto& protein : proteins) {
             // fill compact sequence
             const char* compact_sequence = &compact_sequences_[index];
-            for (auto i = 0; i < protein.sequence_length; ++i) {
+            for (unsigned i = 0; i < protein.sequence_length; ++i) {
                 compact_sequences_[index++] = protein.sequence[i] == 'I' ? 'L' : protein.sequence[i];
             }  // prefer L
             compact_sequences_[index++] = '\0';
@@ -63,7 +64,7 @@ public:
     auto upper_bound(double upper_mass) const {
         auto end = std::upper_bound(peptides_.begin(), peptides_.end(), upper_mass,
             [](const auto& val, const auto& peptide) {
-                return val < peptide.molecule_weight;
+                return val < peptide.mass;
             }
         );
         return end;
@@ -85,21 +86,22 @@ private:
     const std::unordered_map<char, double> mass_table_ = {
         { 'G', 57.02147 },{ 'A', 71.03712 },{ 'S', 87.03203 },{ 'P', 97.05277 },
         { 'V', 99.06842 },{ 'T', 101.04768 },{ 'C', 103.00919 + 57.021464 /* Fixed Mod on C */ },
-        { 'I', 113.08407 }, /*{ 'L', 113.08407 },*/
+        /*{ 'I', 113.08407 },*/ { 'L', 113.08407 },
         { 'N', 114.04293 },{ 'D', 115.02695 },{ 'Q', 128.05858 },
         { 'K', 128.09497 },{ 'E', 129.04260 },{ 'M', 131.04049 },{ 'H', 137.05891 },
         { 'F', 147.06842 },{ 'R', 156.10112 },{ 'Y', 163.06333 },{ 'W', 186.07932 }
     };
 
     // builders
-    void Digest(std::unordered_set<Peptide>& pool, const Protein& protein, const char* compact_sequence) const {
+    void Digest(std::unordered_set<Peptide>& pool, 
+                const Protein& protein, const char* compact_sequence) const {
         auto cleavage_sites = GenCleavageSites(compact_sequence, protein.sequence_length);
         auto segments_mass = SegmentsMass(compact_sequence, protein.sequence_length, cleavage_sites);  // if segment equals to 0, then we ignore it
         auto local_max_miss_cleavage = cleavage_sites.size() - 1 < max_miss_cleavage_
                                        ? cleavage_sites.size() - 1 : max_miss_cleavage_;
 
         // handle miss cleavage, put smaller loop inside to accelerate the computation
-        for (auto index = 0; index < cleavage_sites.size(); ++index) {
+        for (unsigned index = 0; index < cleavage_sites.size(); ++index) {
             for (unsigned miss_cleavage = 0; miss_cleavage <= local_max_miss_cleavage; ++miss_cleavage) {
                 auto start = cleavage_sites[index];
                 auto end = index + miss_cleavage + 1 < cleavage_sites.size()
@@ -132,7 +134,7 @@ private:
         cleavage_sites.push_back(0);
         switch (enzyme_type_) {  // to support more enzymes, simply add different cleavage rules here
         case EnzymeType::Trypsin:  // Trypsin KR
-            for (auto index = 1; index < sequence_length; ++index) {
+            for (unsigned index = 1; index < sequence_length; ++index) {
                 if ((compact_sequence[index - 1] == 'K' || compact_sequence[index - 1] == 'R')
                     && compact_sequence[index] != 'P') {
                     cleavage_sites.push_back(index);
@@ -149,7 +151,7 @@ private:
     std::vector<double> SegmentsMass(const char* sequence, size_t sequence_length, 
                                      const std::vector<unsigned>& cleavage_sites) const {
         std::vector<double> segments_mass;
-        for (auto i = 0; i < cleavage_sites.size(); ++i) {
+        for (unsigned i = 0; i < cleavage_sites.size(); ++i) {
             auto start = cleavage_sites[i];
             auto end = i == cleavage_sites.size() - 1
                        ? sequence_length
@@ -168,17 +170,3 @@ private:
         return segments_mass;
     }
 };
-
-// hashing support, TODO: use cityhash
-namespace std {
-    template<> struct hash<PPData::Peptide> {
-        size_t operator()(const PPData::Peptide& p) const {
-            return (hash<string>()(string(p.sequence, p.sequence_length)));
-        }
-    };
-}
-
-inline bool operator==(const PPData::Peptide& one, const PPData::Peptide& another) {
-    if (one.sequence_length != another.sequence_length) { return false; }
-    return (0 == strncmp(one.sequence, another.sequence, one.sequence_length));
-}
