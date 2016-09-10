@@ -12,5 +12,5 @@ add_subdirectory(3rdparty/googletest-release-1.7.0)
 add_definitions("-std=c++1y")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-add_executable(unittest test/Test_PeptMgr.cpp)
+add_executable(unittest test/Test_PPData.cpp src/PPData.cpp)
 target_link_libraries(unittest gtest gtest_main)
