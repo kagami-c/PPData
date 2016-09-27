@@ -50,6 +50,8 @@ public:
     }
 
     size_t size() const { return peptides_.size(); }
+    const Peptide& operator[](const size_t index) const { return peptides_[index]; }
+
     auto begin() const { return peptides_.cbegin(); }
     auto end() const { return peptides_.cend(); }
 

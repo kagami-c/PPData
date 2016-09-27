@@ -27,6 +27,7 @@ public:
               pept_data_(prot_data_, enzyme_type, max_miss_cleavage, min_mass, max_mass) {}
 
     size_t size() const { return pept_data_.size(); }
+    const Peptide& operator[](const size_t index) const { return pept_data_[index]; }
     auto begin() const { return pept_data_.begin(); }
     auto end() const { return pept_data_.end(); }
     auto lower_bound(double lower_mass) const { return pept_data_.lower_bound(lower_mass); }
@@ -46,6 +47,7 @@ PPData::~PPData() {}
 
 // adapters
 size_t PPData::size() const { return pImpl->size(); }
+const PPData::Peptide& PPData::operator[](const size_t index) const { return pImpl->operator[](index); }
 auto PPData::begin() const { return pImpl->begin(); }
 auto PPData::end() const { return pImpl->end(); }
 auto PPData::lower_bound(double mass) const { return pImpl->lower_bound(mass); }

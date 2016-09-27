@@ -51,7 +51,10 @@ public:
            : PPData(filename, false, EnzymeType::Trypsin, 0, 600.0, 5000.0) {}
     ~PPData();
 
+    // access methods
     size_t size() const;
+    const Peptide& operator[](const size_t index) const;
+
     auto begin() const;
     auto end() const;
 
