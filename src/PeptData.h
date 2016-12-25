@@ -16,9 +16,9 @@ public:
     using EnzymeType = PPData::EnzymeType;
 
     // TODO: provide an API for assigning a different mass table (possibly with modifications)
-    PeptData(const ProtData& proteins, EnzymeType enzyme_type, unsigned max_miss_cleavage, 
+    PeptData(const ProtData& proteins, EnzymeType enzyme_type, unsigned max_miss_cleavage,
              double min_mass, double max_mass)
-            : enzyme_type_(enzyme_type), max_miss_cleavage_(max_miss_cleavage), 
+            : enzyme_type_(enzyme_type), max_miss_cleavage_(max_miss_cleavage),
               min_mass_(min_mass), max_mass_(max_mass) {
         // calculate compact size
         auto sequences_len_sum = std::accumulate(proteins.begin(), proteins.end(), 0,
@@ -45,7 +45,7 @@ public:
         }
 
         peptides_.insert(peptides_.end(), pool.begin(), pool.end());
-        std::sort(peptides_.begin(), peptides_.end(),
+        std::stable_sort(peptides_.begin(), peptides_.end(),
                   [](const auto& one, const auto& another) { return one.mass < another.mass; });
     }
 
@@ -71,7 +71,7 @@ public:
         );
         return end;
     }
-    
+
 private:
     const EnzymeType enzyme_type_;
     const unsigned max_miss_cleavage_;
@@ -95,7 +95,7 @@ private:
     };
 
     // builders
-    void Digest(std::unordered_set<Peptide>& pool, 
+    void Digest(std::unordered_set<Peptide>& pool,
                 const Protein& protein, const char* compact_sequence) const {
         auto cleavage_sites = GenCleavageSites(compact_sequence, protein.sequence_length);
         auto segments_mass = SegmentsMass(compact_sequence, protein.sequence_length, cleavage_sites);  // if segment equals to 0, then we ignore it
@@ -107,7 +107,7 @@ private:
             for (unsigned miss_cleavage = 0; miss_cleavage <= local_max_miss_cleavage; ++miss_cleavage) {
                 auto start = cleavage_sites[index];
                 auto end = index + miss_cleavage + 1 < cleavage_sites.size()
-                           ? cleavage_sites[index + miss_cleavage + 1] 
+                           ? cleavage_sites[index + miss_cleavage + 1]
                            : protein.sequence_length;  // next char of the end
 
                 auto mass = water_;
@@ -150,7 +150,7 @@ private:
     }
 
     // return the mass value in each segment, so that we don't have to re-compute them
-    std::vector<double> SegmentsMass(const char* sequence, size_t sequence_length, 
+    std::vector<double> SegmentsMass(const char* sequence, size_t sequence_length,
                                      const std::vector<unsigned>& cleavage_sites) const {
         std::vector<double> segments_mass;
         for (unsigned i = 0; i < cleavage_sites.size(); ++i) {

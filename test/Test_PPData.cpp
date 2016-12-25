@@ -1,4 +1,4 @@
-#include "PPData.h"
+#include <PPData.h>
 #include <ProtData.h>
 #include <gtest/gtest.h>
 
@@ -25,4 +25,10 @@ TEST(Unittest_PPData, ProtData_API) {
 
     auto decoy = ProtData("uniprot-all.fasta", true);
     EXPECT_EQ(20198 * 2, decoy.size());
+}
+
+TEST(Unittest_PPData, PeptNum) {
+    PPData ppdata("C:\\Users\\Jiaan\\Desktop\\RandomDatabase\\random20000.fasta", true,
+                  PPData::EnzymeType::Trypsin, 2, 1000, 5000);
+    EXPECT_EQ(0, ppdata.size());
 }
