@@ -28,7 +28,7 @@ TEST(Unittest_PPData, ProtData_API) {
 }
 
 TEST(Unittest_PPData, PeptNum) {
-    PPData ppdata("C:\\Users\\Jiaan\\Desktop\\RandomDatabase\\random20000.fasta", true,
+    PPData ppdata("random20000.fasta", true,
                   PPData::EnzymeType::Trypsin, 2, 1000, 5000);
     EXPECT_EQ(0, ppdata.size());
 }
