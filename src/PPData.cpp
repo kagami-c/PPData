@@ -8,7 +8,7 @@
 PPData::Protein::Protein(const char* name, const char* sequence, size_t sequence_length)
         : name(name), sequence(sequence), sequence_length(sequence_length) {}
 
-PPData::Peptide::Peptide(const Protein& protein, const char* compact_protein_sequence, 
+PPData::Peptide::Peptide(const Protein& protein, const char* compact_protein_sequence,
                          size_t start_idx, size_t end_idx, double mass)
         : sequence(compact_protein_sequence + start_idx),
           sequence_length(end_idx - start_idx),
@@ -28,10 +28,6 @@ public:
 
     size_t size() const { return pept_data_.size(); }
     const Peptide& operator[](const size_t index) const { return pept_data_[index]; }
-    auto begin() const { return pept_data_.begin(); }
-    auto end() const { return pept_data_.end(); }
-    auto lower_bound(double lower_mass) const { return pept_data_.lower_bound(lower_mass); }
-    auto upper_bound(double upper_mass) const { return pept_data_.upper_bound(upper_mass); }
 
 private:
     ProtData prot_data_;
@@ -48,11 +44,3 @@ PPData::~PPData() {}
 // adapters
 size_t PPData::size() const { return pImpl->size(); }
 const PPData::Peptide& PPData::operator[](const size_t index) const { return pImpl->operator[](index); }
-auto PPData::begin() const { return pImpl->begin(); }
-auto PPData::end() const { return pImpl->end(); }
-auto PPData::lower_bound(double mass) const { return pImpl->lower_bound(mass); }
-auto PPData::upper_bound(double mass) const { return pImpl->upper_bound(mass); }
-
-auto PPData::LoopWithin(double lower_mass, double upper_mass) const {
-    return range<std::vector<Peptide>::const_iterator>(lower_bound(lower_mass), upper_bound(upper_mass));
-}
