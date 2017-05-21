@@ -82,8 +82,10 @@ private:
     std::vector<Peptide> peptides_;
 
     // internal mass table
-    const double proton_ = 1.00727;
-    const double water_ = 18.01528;
+    const double proton_ = 1.00727;  // we don't use proton_ here
+    const double hydrogen_ = 1.00782;
+    const double oxygen_ = 15.99491;
+    const double water_ = oxygen_ + hydrogen_ + hydrogen_;
 
     const std::unordered_map<char, double> mass_table_ = {
         { 'G', 57.02147 },{ 'A', 71.03712 },{ 'S', 87.03203 },{ 'P', 97.05277 },
