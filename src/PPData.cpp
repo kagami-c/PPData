@@ -39,6 +39,7 @@ PPData::PPData(const char* filename, bool append_decoy, EnzymeType enzyme_type,
                unsigned max_miss_cleavage, double min_mass, double max_mass)
                : pImpl(std::make_unique<Impl>(filename, append_decoy, enzyme_type,
                                               max_miss_cleavage, min_mass, max_mass)) {}
+PPData::PPData(const PPData& ppdata) : pImpl(new Impl(*ppdata.pImpl)) {}
 PPData::~PPData() {}
 
 // adapters
